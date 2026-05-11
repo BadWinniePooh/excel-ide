@@ -153,6 +153,16 @@
         }
         i = j; continue;
       }
+      if (c === "[") {
+        let j = i; let depth = 0;
+        while (j < s.length) {
+          const ch = s[j];
+          if (ch === "[") depth++;
+          out += ch; j++;
+          if (ch === "]") { depth--; if (depth === 0) break; }
+        }
+        i = j; continue;
+      }
       if (c === " " || c === "\t" || c === "\n" || c === "\r") { i++; continue; }
       out += c; i++;
     }
