@@ -8,10 +8,9 @@ services:
     restart: unless-stopped
     read_only: true
     tmpfs:
-      # nginx writes PID, cache, and temp files here at runtime
+      # All nginx runtime writes (PID, temp files) go to /tmp.
+      # Logs stream to stdout/stderr; no other paths need write access.
       - /tmp
-      - /var/cache/nginx
-      - /var/log/nginx
     deploy:
       resources:
         limits:

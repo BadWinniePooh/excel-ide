@@ -48,8 +48,6 @@ jobs:
         run: |
           docker run -d --name ci-test \
             --tmpfs /tmp \
-            --tmpfs /var/cache/nginx \
-            --tmpfs /var/log/nginx \
             --read-only \
             -p 8080:8080 \
             excel-ide:ci

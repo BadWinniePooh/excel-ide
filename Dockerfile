@@ -40,13 +40,11 @@ COPY --from=builder /build/project/formula.js        /usr/share/nginx/html/
 COPY --from=builder /build/project/app.js            /usr/share/nginx/html/
 COPY --from=builder /build/project/vendor/           /usr/share/nginx/html/vendor/
 
-# Grant the non-root user write access to the paths nginx needs at runtime
-RUN chown -R appuser:appgroup \
-        /usr/share/nginx/html \
-        /var/cache/nginx \
-        /var/log/nginx && \
-    # nginx writes its PID here; /tmp is world-writable so this is safe
-    touch /tmp/nginx.pid && chown appuser:appgroup /tmp/nginx.pid
+# Grant the non-root user ownership of the static asset directory.
+# /tmp is already world-writable (1777) so the PID file and all nginx temp
+# paths (client_body, proxy, …) can be written there without extra chowns.
+# Logs go to /dev/stdout and /dev/stderr — no /var/log/nginx writes needed.
+RUN chown -R appuser:appgroup /usr/share/nginx/html
 
 USER appuser
 EXPOSE 8080
