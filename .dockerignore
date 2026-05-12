@@ -1,0 +1,19 @@
+# Version control
+.git
+.gitignore
+
+# Documentation / chat history (never ship to the image)
+README.md
+chats/
+
+# Compiled output that the builder stage generates — not needed as build input
+project/app.js
+project/tweaks-panel.js
+project/vendor/
+
+# Node artefacts
+node_modules/
+npm-debug.log*
+
+# CI / tooling
+.github/

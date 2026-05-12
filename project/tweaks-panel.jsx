@@ -168,7 +168,10 @@ function useTweaks(defaults) {
     const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
       ? keyOrEdits : { [keyOrEdits]: val };
     setValues((prev) => ({ ...prev, ...edits }));
-    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+    // Use '*' only as a last resort; callers in a known host should pass the
+    // expected parent origin via a data attribute or environment variable.
+    const targetOrigin = document.documentElement.dataset.tweaksOrigin || '*';
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, targetOrigin);
     // Same-window signal so in-page listeners (deck-stage rail thumbnails)
     // can react — the parent message only reaches the host, not peers.
     window.dispatchEvent(new CustomEvent('tweakchange', { detail: edits }));
@@ -249,13 +252,18 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
   }, [open, clampToViewport]);
 
   React.useEffect(() => {
+    const allowedOrigin = document.documentElement.dataset.tweaksOrigin || null;
     const onMsg = (e) => {
+      // Reject messages from unexpected origins to prevent arbitrary pages from
+      // activating the edit panel (OWASP A03 – postMessage injection).
+      if (allowedOrigin && e.origin !== allowedOrigin) return;
       const t = e?.data?.type;
       if (t === '__activate_edit_mode') setOpen(true);
       else if (t === '__deactivate_edit_mode') setOpen(false);
     };
     window.addEventListener('message', onMsg);
-    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    const targetOrigin = allowedOrigin || '*';
+    window.parent.postMessage({ type: '__edit_mode_available' }, targetOrigin);
     return () => window.removeEventListener('message', onMsg);
   }, []);
 
