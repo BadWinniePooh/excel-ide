@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
     restart: unless-stopped
     read_only: true
     tmpfs:
@@ -21,3 +19,43 @@ services:
           memory: 32M
     security_opt:
       - no-new-privileges:true
+    profiles:
+      - default
+
+  web-traefik:
+    extends:
+      service: web
+    # No direct port exposure — Traefik terminates TLS and proxies internally.
+    networks:
+      - traefik
+    labels:
+      # ── Traefik discovery ─────────────────────────────────────────────
+      traefik.enable: "true"
+      traefik.docker.network: traefik
+
+      # Router — HTTPS only; HTTP is handled by the global redirect in Traefik.
+      traefik.http.routers.excel-ide.rule: "Host(`${DOMAIN}`)"
+      traefik.http.routers.excel-ide.entrypoints: "websecure"
+      traefik.http.routers.excel-ide.tls: "true"
+      traefik.http.routers.excel-ide.tls.certresolver: "${CERT_RESOLVER:-letsencrypt}"
+
+      # Service — tell Traefik which port the container listens on.
+      traefik.http.services.excel-ide.loadbalancer.server.port: "8080"
+
+      # ── Security middleware ───────────────────────────────────────────
+      traefik.http.routers.excel-ide.middlewares: "excel-ide-headers@docker"
+
+      # Compress responses (Traefik built-in).
+      traefik.http.middlewares.excel-ide-compress.compress: "true"
+
+      # Security-header middleware (supplements the headers set by nginx).
+      traefik.http.middlewares.excel-ide-headers.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.excel-ide-headers.headers.stsIncludeSubdomains: "true"
+      traefik.http.middlewares.excel-ide-headers.headers.stsPreload: "true"
+      traefik.http.middlewares.excel-ide-headers.headers.forceSTSHeader: "true"
+    profiles:
+      - traefik
+
+networks:
+  traefik:
+    external: true
