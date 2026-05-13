@@ -14,6 +14,7 @@ project/vendor/
 # Node artefacts
 node_modules/
 npm-debug.log*
+.npm
 
 # CI / tooling
 .github/

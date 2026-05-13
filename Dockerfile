@@ -5,8 +5,8 @@
 FROM node:22-alpine AS builder
 WORKDIR /build
 
-COPY package.json babel.config.json ./
-RUN npm install
+COPY package.json package-lock.json babel.config.json ./
+RUN npm ci
 
 COPY project/ ./project/
 
