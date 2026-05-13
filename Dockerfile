@@ -36,6 +36,7 @@ COPY nginx/default.conf        /etc/nginx/conf.d/default.conf
 # Copy only the compiled/vendored production assets — .jsx source files
 # are intentionally excluded from the runtime image.
 COPY --from=builder /build/project/index.html        /usr/share/nginx/html/
+COPY --from=builder /build/project/styles.css        /usr/share/nginx/html/
 COPY --from=builder /build/project/formula.js        /usr/share/nginx/html/
 COPY --from=builder /build/project/app.js            /usr/share/nginx/html/
 COPY --from=builder /build/project/vendor/           /usr/share/nginx/html/vendor/
