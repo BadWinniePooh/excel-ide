@@ -1,31 +1,44 @@
+x-base: &base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    # All nginx runtime writes (PID, temp files) go to /tmp.
+    # Logs stream to stdout/stderr; no other paths need write access.
+    - /tmp
+  deploy:
+    resources:
+      limits:
+        cpus: "0.50"
+        memory: 128M
+      reservations:
+        cpus: "0.05"
+        memory: 32M
+  security_opt:
+    - no-new-privileges:true
+
 services:
+  # ── Default profile ───────────────────────────────────────────────────────
+  # Direct port binding for local use or behind your own reverse proxy.
+  # Usage: docker compose up -d
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    read_only: true
-    tmpfs:
-      # All nginx runtime writes (PID, temp files) go to /tmp.
-      # Logs stream to stdout/stderr; no other paths need write access.
-      - /tmp
-    deploy:
-      resources:
-        limits:
-          cpus: "0.50"
-          memory: 128M
-        reservations:
-          cpus: "0.05"
-          memory: 32M
-    security_opt:
-      - no-new-privileges:true
+    <<: *base
+    ports:
+      - "8080:8080"
     profiles:
       - default
 
+  # ── Traefik profile ───────────────────────────────────────────────────────
+  # No port binding — Traefik terminates TLS and proxies internally.
+  # Prerequisites:
+  #   - External Docker network named "traefik" must exist
+  #   - $DOMAIN must be set (e.g. formula.example.com)
+  #   - $CERT_RESOLVER optionally overrides the cert resolver (default: letsencrypt)
+  # Usage: DOMAIN=formula.example.com docker compose --profile traefik up -d
   web-traefik:
-    extends:
-      service: web
-    # No direct port exposure — Traefik terminates TLS and proxies internally.
+    <<: *base
     networks:
       - traefik
     labels:
@@ -45,14 +58,11 @@ services:
       # ── Security middleware ───────────────────────────────────────────
       traefik.http.routers.excel-ide.middlewares: "excel-ide-headers@docker"
 
-      # Compress responses (Traefik built-in).
-      traefik.http.middlewares.excel-ide-compress.compress: "true"
-
-      # Security-header middleware (supplements the headers set by nginx).
       traefik.http.middlewares.excel-ide-headers.headers.stsSeconds: "31536000"
       traefik.http.middlewares.excel-ide-headers.headers.stsIncludeSubdomains: "true"
       traefik.http.middlewares.excel-ide-headers.headers.stsPreload: "true"
       traefik.http.middlewares.excel-ide-headers.headers.forceSTSHeader: "true"
+      traefik.http.middlewares.excel-ide-compress.compress: "true"
     profiles:
       - traefik
 
